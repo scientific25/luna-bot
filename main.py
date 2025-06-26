@@ -44,23 +44,30 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
 
-    plano = query.data.replace("PLANO_", "")
-    texto = f"🔥 Amor, você escolheu o plano {plano.replace('_', ' ').title()}...\nAgora é só escolher como quer pagar 😘"
+    data = query.data
 
-    links = PLANOS.get(plano)
-    if not links:
-        await query.edit_message_text("Erro ao buscar os links do plano 😢")
-        return
+    if data.startswith("PLANO_"):
+        plano = data.replace("PLANO_", "")
+        texto = f"🔥 Amor, você escolheu o plano {plano.replace('_', ' ').title()}...\nAgora é só escolher como quer pagar e veja o que tenho pra te dar 😈🌶"
 
-    keyboard = [
-        [
-            InlineKeyboardButton("💸 PIX", url=links['pix']),
-            InlineKeyboardButton("💳 Cartão", url=links['cartao'])
+        links = PLANOS.get(plano)
+        if not links:
+            await query.edit_message_text("Erro ao buscar os links do plano 😢")
+            return
+
+        keyboard = [
+            [
+                InlineKeyboardButton("💸 PIX", url=links['pix']),
+                InlineKeyboardButton("💳 Cartão", url=links['cartao'])
+            ],
+            [InlineKeyboardButton("🔙 Voltar", callback_data="VOLTAR_MENU")]
         ]
-    ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
+        reply_markup = InlineKeyboardMarkup(keyboard)
 
-    await query.edit_message_text(texto, reply_markup=reply_markup)
+        await query.edit_message_text(texto, reply_markup=reply_markup)
+
+    elif data == "VOLTAR_MENU":
+        await start(update, context)
 
 app = ApplicationBuilder().token(TOKEN).build()
 app.add_handler(CommandHandler("start", start))
@@ -68,3 +75,4 @@ app.add_handler(CallbackQueryHandler(button))
 
 print("Bot iniciado...")
 app.run_polling()
+
