@@ -1,22 +1,71 @@
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler, ContextTypes
 import os
 from dotenv import load_dotenv
-from telegram import Update
-from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 
 load_dotenv()
-
 TOKEN = os.getenv("TELEGRAM_TOKEN")
-GRUPO_VIP_LINK = os.getenv("GRUPO_VIP_LINK")
+
+# LINKS DOS PLANOS
+PLANOS = {
+    "7_DIAS": {
+        "pix": "https://app.pushinpay.com.br/service/pay/9F3EF990-5A7A-45D1-8C47-69DF06F06568",
+        "cartao": "https://buy.stripe.com/7sY7sL2OFb5z1GRcKE0ZW01"
+    },
+    "30_DIAS": {
+        "pix": "https://app.pushinpay.com.br/service/pay/9F3EFA7B-D3CB-42A7-A8D0-105D114FE464",
+        "cartao": "https://buy.stripe.com/cNifZh74V0qVclv4e80ZW02"
+    },
+    "SEMESTRAL": {
+        "pix": "https://app.pushinpay.com.br/service/pay/9F3F2A96-283F-4CB7-85B2-70CE16EE6D10",
+        "cartao": "https://buy.stripe.com/3cI14nexnb5z85f2600ZW05"
+    },
+    "VITALICIA": {
+        "pix": "https://app.pushinpay.com.br/service/pay/9F3EFB63-D89D-4076-9D07-6D4B749AAF76",
+        "cartao": "https://buy.stripe.com/5kQbJ19d38Xrbhr2600ZW04"
+    }
+}
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    keyboard = [
+        [InlineKeyboardButton("7 Dias 😍", callback_data="PLANO_7_DIAS")],
+        [InlineKeyboardButton("30 Dias 🐵", callback_data="PLANO_30_DIAS")],
+        [InlineKeyboardButton("Semestral 💖", callback_data="PLANO_SEMESTRAL")],
+        [InlineKeyboardButton("Vitalícia 💎", callback_data="PLANO_VITALICIA")],
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
     await update.message.reply_text(
-        f"Olá, amorzinho 😘\n\nPara acessar meu grupo VIP, escolha um plano aqui:\n\n"
-        f"🔞 https://linktr.ee/lunaangelvip\n\n"
-        f"💋 Depois do pagamento, me chama aqui ou aguarde o acesso automático!"
+        "Oi, amorzinho 😘\n\nEscolha um dos meus planos VIP aqui embaixo pra liberar tudinho pra você... 😈",
+        reply_markup=reply_markup
     )
+
+async def button(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+
+    plano = query.data.replace("PLANO_", "")
+    texto = f"🔥 Amor, você escolheu o plano {plano.replace('_', ' ').title()}...\nAgora é só escolher como quer pagar 😘"
+
+    links = PLANOS.get(plano)
+    if not links:
+        await query.edit_message_text("Erro ao buscar os links do plano 😢")
+        return
+
+    keyboard = [
+        [
+            InlineKeyboardButton("💸 PIX", url=links['pix']),
+            InlineKeyboardButton("💳 Cartão", url=links['cartao'])
+        ]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
+    await query.edit_message_text(texto, reply_markup=reply_markup)
 
 app = ApplicationBuilder().token(TOKEN).build()
 app.add_handler(CommandHandler("start", start))
+app.add_handler(CallbackQueryHandler(button))
 
 print("Bot iniciado...")
 app.run_polling()
+
