@@ -8,19 +8,19 @@ TOKEN = os.getenv("TELEGRAM_TOKEN")
 
 # LINKS DOS PLANOS
 PLANOS = {
-    "7_DIAS": {
+    "7_DIAS_R$9,99": {
         "pix": "https://app.pushinpay.com.br/service/pay/9F3EF990-5A7A-45D1-8C47-69DF06F06568",
         "cartao": "https://buy.stripe.com/7sY7sL2OFb5z1GRcKE0ZW01"
     },
-    "30_DIAS": {
+    "30_DIAS_R$29,99": {
         "pix": "https://app.pushinpay.com.br/service/pay/9F3EFA7B-D3CB-42A7-A8D0-105D114FE464",
         "cartao": "https://buy.stripe.com/cNifZh74V0qVclv4e80ZW02"
     },
-    "SEMESTRAL": {
+    "SEMESTRAL_R$39,99": {
         "pix": "https://app.pushinpay.com.br/service/pay/9F3F2A96-283F-4CB7-85B2-70CE16EE6D10",
         "cartao": "https://buy.stripe.com/3cI14nexnb5z85f2600ZW05"
     },
-    "VITALICIA": {
+    "VITALICIA_R$29,99": {
         "pix": "https://app.pushinpay.com.br/service/pay/9F3EFB63-D89D-4076-9D07-6D4B749AAF76",
         "cartao": "https://buy.stripe.com/5kQbJ19d38Xrbhr2600ZW04"
     }
