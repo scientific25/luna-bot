@@ -6,6 +6,6 @@ COPY . .
 RUN apt-get update && apt-get install -y ca-certificates
 RUN pip install --no-cache-dir -r requirements.txt
 
-# A Railway irá passar a variável de ambiente PORT automaticamente
+# Não defina ENV PORT! Deixe o Railway setar.
 
-CMD gunicorn --bind 0.0.0.0:${PORT:-5000} main:app
+CMD ["sh", "-c", "gunicorn --bind 0.0.0.0:${PORT:-5000} main:app"]
