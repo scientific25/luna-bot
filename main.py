@@ -1,12 +1,13 @@
 from db_utils import init_db, salvar_expiracao, carregar_expiracoes, remover_expiracao
 
-
 import os
 import json
 import requests
 from flask import Flask, request
 from telegram import Bot, InlineKeyboardMarkup, InlineKeyboardButton, Update
 from telegram.ext import Dispatcher, CommandHandler, CallbackQueryHandler, CallbackContext
+import threading
+import time
 
 TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 CHANNEL_ID = os.getenv("CHANNEL_ID")  # deve ser o ID numérico do canal (ex: -1001234567890)
@@ -112,13 +113,8 @@ def pushinpay_webhook():
 dispatcher.add_handler(CommandHandler("start", start))
 dispatcher.add_handler(CallbackQueryHandler(handle_plan_selection))
 
-
-
-import sqlite3
 init_db()
 
-# Após iniciar o bot, agenda remoções pendentes
-import threading, time
 def monitorar_expiracoes():
     while True:
         now = int(time.time())
@@ -131,15 +127,13 @@ def monitorar_expiracoes():
                 try:
                     bot.kick_chat_member(chat_id=int(CHANNEL_ID), user_id=int(user_id))
                     remover_expiracao(user_id)
-                    print(f"👢 Removido (retardatário) user {user_id}")
+                    print(f"👢 Removido (retardatário) user {user_id}", flush=True)
                 except Exception as e:
-                    print("Erro ao expulsar:", e)
+                    print("Erro ao expulsar:", e, flush=True)
         time.sleep(60)
 
 threading.Thread(target=monitorar_expiracoes, daemon=True).start()
 
-
 if __name__ == "__main__":
     print("🔥 Bot rodando com Pushinpay + SQLite + expulsão automática")
-    import os
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
