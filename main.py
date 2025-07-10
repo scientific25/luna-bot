@@ -19,22 +19,22 @@ dispatcher = Dispatcher(bot, None, use_context=True)
 PLANS = {
     "24_horas": {
         "label": "💦 24 horas – R$ 4,99",
-        "link": "https://app.pushinpay.com.br/service/pay/9F48A868-D946-4C95-ACFB-A2ECD3D40B86",
+        "link": "https://app.pushinpay.com.br/service/pay/9f5b0067-b56d-4051-8914-855691f58358",
         "hours": 24
     },
     "7_dias": {
         "label": "🔥 7 dias – R$ 9,99",
-        "link": "https://app.pushinpay.com.br/service/pay/9F48A8A2-20BC-496A-B749-8FAAF7A4088B",
+        "link": "https://app.pushinpay.com.br/service/pay/9f5b00c0-2f1f-41dd-946f-8d526c83b06f",
         "hours": 168
     },
     "30_dias": {
         "label": "👅 30 dias – R$ 19,99",
-        "link": "https://app.pushinpay.com.br/service/pay/9F48A8C0-571E-4F33-A5E9-39857692CBE2",
+        "link": "https://app.pushinpay.com.br/service/pay/9f5b0103-c237-4ce7-a5a7-dae95e0872dd",
         "hours": 720
     },
     "vitalicio": {
-        "label": "💎 Vitalício – R$ 29,99",
-        "link": "https://app.pushinpay.com.br/service/pay/9F48A91B-BEE5-4581-8C51-54794C62A87E",
+        "label": "💎 PARA SEMPRE SUA SUBMISSA 😈 – R$ 29,99",
+        "link": "https://app.pushinpay.com.br/service/pay/9f5b0152-6bb7-4756-b813-2a3787c61382",
         "hours": None
     }
 }
@@ -45,7 +45,7 @@ def start(update: Update, context: CallbackContext):
     ]
     msg = (
         "Oi, amor 😘\n"
-        "Eu tenho um cantinho VIP cheio de safadeza só pra você…\n"
+        "Eu tenho um cantinho VIP cheio de safadeza e submissão só pra você…\n"
         "Escolhe quanto tempo quer me ter todinha só pra você 😈"
     )
     update.message.reply_text(msg, reply_markup=InlineKeyboardMarkup(keyboard))
