@@ -1,78 +1,144 @@
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler, ContextTypes
+from db_utils import init_db, salvar_expiracao, carregar_expiracoes, remover_expiracao
+
+
 import os
-from dotenv import load_dotenv
+import json
+import requests
+from flask import Flask, request
+from telegram import Bot, InlineKeyboardMarkup, InlineKeyboardButton, Update
+from telegram.ext import Dispatcher, CommandHandler, CallbackQueryHandler, CallbackContext
 
-load_dotenv()
-TOKEN = os.getenv("TELEGRAM_TOKEN")
+TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
+CHANNEL_ID = os.getenv("CHANNEL_ID")  # deve ser o ID numérico do canal (ex: -1001234567890)
+PUSHINPAY_API_KEY = os.getenv("PUSHINPAY_API_KEY")
 
-# LINKS DOS PLANOS
-PLANOS = {
-    "7_DIAS_R$9,99": {
-        "pix": "https://app.pushinpay.com.br/service/pay/9F3EF990-5A7A-45D1-8C47-69DF06F06568",
-        "cartao": "https://buy.stripe.com/7sY7sL2OFb5z1GRcKE0ZW01"
+app = Flask(__name__)
+bot = Bot(token=TOKEN)
+dispatcher = Dispatcher(bot, None, use_context=True)
+
+PLANS = {
+    "24_horas": {
+        "label": "💦 24 horas – R$ 4,99",
+        "link": "https://app.pushinpay.com.br/service/pay/9F48A868-D946-4C95-ACFB-A2ECD3D40B86",
+        "hours": 24
     },
-    "30_DIAS_R$29,99": {
-        "pix": "https://app.pushinpay.com.br/service/pay/9F3EFA7B-D3CB-42A7-A8D0-105D114FE464",
-        "cartao": "https://buy.stripe.com/cNifZh74V0qVclv4e80ZW02"
+    "7_dias": {
+        "label": "🔥 7 dias – R$ 9,99",
+        "link": "https://app.pushinpay.com.br/service/pay/9F48A8A2-20BC-496A-B749-8FAAF7A4088B",
+        "hours": 168
     },
-    "SEMESTRAL_R$39,99": {
-        "pix": "https://app.pushinpay.com.br/service/pay/9F3F2A96-283F-4CB7-85B2-70CE16EE6D10",
-        "cartao": "https://buy.stripe.com/3cI14nexnb5z85f2600ZW05"
+    "30_dias": {
+        "label": "👅 30 dias – R$ 19,99",
+        "link": "https://app.pushinpay.com.br/service/pay/9F48A8C0-571E-4F33-A5E9-39857692CBE2",
+        "hours": 720
     },
-    "VITALICIA_R$29,99": {
-        "pix": "https://app.pushinpay.com.br/service/pay/9F3EFB63-D89D-4076-9D07-6D4B749AAF76",
-        "cartao": "https://buy.stripe.com/5kQbJ19d38Xrbhr2600ZW04"
+    "vitalicio": {
+        "label": "💎 Vitalício – R$ 29,99",
+        "link": "https://app.pushinpay.com.br/service/pay/9F48A91B-BEE5-4581-8C51-54794C62A87E",
+        "hours": None
     }
 }
 
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+def start(update: Update, context: CallbackContext):
     keyboard = [
-        [InlineKeyboardButton("7 Dias 😍", callback_data="PLANO_7_DIAS")],
-        [InlineKeyboardButton("30 Dias 🐵", callback_data="PLANO_30_DIAS")],
-        [InlineKeyboardButton("Semestral 💖", callback_data="PLANO_SEMESTRAL")],
-        [InlineKeyboardButton("Vitalícia 💎", callback_data="PLANO_VITALICIA")],
+        [InlineKeyboardButton(p["label"], callback_data=k)] for k, p in PLANS.items()
     ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-
-    await update.message.reply_text(
-        "Oi, amorzinho 😘\n\nEscolha um dos meus planos VIP aqui embaixo pra liberar tudinho pra você... 😈",
-        reply_markup=reply_markup
+    msg = (
+        "Oi, amor 😘\n"
+        "Eu tenho um cantinho VIP cheio de safadeza só pra você…\n"
+        "Escolhe quanto tempo quer me ter todinha só pra você 😈"
     )
+    update.message.reply_text(msg, reply_markup=InlineKeyboardMarkup(keyboard))
 
-async def button(update: Update, context: ContextTypes.DEFAULT_TYPE):
+def handle_plan_selection(update: Update, context: CallbackContext):
     query = update.callback_query
-    await query.answer()
+    user_id = query.from_user.id
+    plan_key = query.data
+    plan = PLANS.get(plan_key)
 
-    data = query.data
+    if not plan:
+        query.answer("Plano inválido!", show_alert=True)
+        return
 
-    if data.startswith("PLANO_"):
-        plano = data.replace("PLANO_", "")
-        texto = f"🔥 Amor, você escolheu o plano {plano.replace('_', ' ').title()}...\nAgora é só escolher como quer pagar e veja o que tenho pra te dar 😈🌶"
+    # Gera link com custom_data
+    custom_json = json.dumps({"user_id": user_id, "plan": plan_key})
+    encoded_custom = requests.utils.quote(custom_json)
+    link = f"{plan['link']}?custom_data={encoded_custom}"
 
-        links = PLANOS.get(plano)
-        if not links:
-            await query.edit_message_text("Erro ao buscar os links do plano 😢")
-            return
+    msg = (
+        "Delícia 😈 Aqui está seu link de pagamento:\n\n"
+        f"{link}\n\n"
+        "Assim que o pagamento for confirmado, eu mesma te coloco no canal VIP 😘"
+    )
+    context.bot.send_message(chat_id=user_id, text=msg)
+    query.answer()
 
-        keyboard = [
-            [
-                InlineKeyboardButton("💸 PIX", url=links['pix']),
-                InlineKeyboardButton("💳 Cartão", url=links['cartao'])
-            ],
-            [InlineKeyboardButton("🔙 Voltar", callback_data="VOLTAR_MENU")]
-        ]
-        reply_markup = InlineKeyboardMarkup(keyboard)
+@app.route("/telegram-webhook", methods=["POST"])
+def telegram_webhook():
+    update = Update.de_json(request.get_json(force=True), bot)
+    dispatcher.process_update(update)
+    return "ok"
 
-        await query.edit_message_text(texto, reply_markup=reply_markup)
+@app.route("/pushinpay-webhook", methods=["POST"])
+def pushinpay_webhook():
+    if request.is_json:
+        data = request.get_json()
+    else:
+        data = request.form.to_dict()
+        
+    print("WEBHOOK:", data, flush=True)
 
-    elif data == "VOLTAR_MENU":
-        await start(update, context)
+    status = data.get("status", "")
+    custom_data = data.get("custom_data", {})
+    user_id = custom_data.get("user_id")
+    plan_key = custom_data.get("plan")
 
-app = ApplicationBuilder().token(TOKEN).build()
-app.add_handler(CommandHandler("start", start))
-app.add_handler(CallbackQueryHandler(button))
+    if status == "CONFIRMED" and user_id and plan_key:
+        try:
+            bot.send_message(
+                chat_id=int(user_id),
+                text="🔥 Pagamento confirmado! Você será adicionado(a) ao canal VIP em instantes..."
+            )
+            bot.send_message(
+                chat_id=int(user_id),
+                text="Se não for adicionado automaticamente, entra por aqui:\nhttps://t.me/+neZ92gCjq51kYWMx"
+            )
+            print(f"✅ Acesso liberado para o user_id: {user_id}", flush=True)
+        except Exception as e:
+            print("Erro ao liberar acesso:", e, flush=True)
 
-print("Bot iniciado...")
-app.run_polling()
+    return {"ok": True}
 
+dispatcher.add_handler(CommandHandler("start", start))
+dispatcher.add_handler(CallbackQueryHandler(handle_plan_selection))
+
+
+
+import sqlite3
+init_db()
+
+# Após iniciar o bot, agenda remoções pendentes
+import threading, time
+def monitorar_expiracoes():
+    while True:
+        now = int(time.time())
+        expiracoes = carregar_expiracoes()
+        for user_id, plan, horas, timestamp in expiracoes:
+            if horas is None:
+                continue
+            limite = timestamp + (horas * 3600)
+            if now >= limite:
+                try:
+                    bot.kick_chat_member(chat_id=int(CHANNEL_ID), user_id=int(user_id))
+                    remover_expiracao(user_id)
+                    print(f"👢 Removido (retardatário) user {user_id}")
+                except Exception as e:
+                    print("Erro ao expulsar:", e)
+        time.sleep(60)
+
+threading.Thread(target=monitorar_expiracoes, daemon=True).start()
+
+
+if __name__ == "__main__":
+    print("🔥 Bot rodando com Pushinpay + SQLite + expulsão automática")
+    app.run(host="0.0.0.0", port=5000)
