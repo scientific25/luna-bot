@@ -10,7 +10,7 @@ import threading
 import time
 
 TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
-CHANNEL_ID = os.getenv("CHANNEL_ID")  # deve ser o ID numérico do canal (ex: -1001234567890)
+CHANNEL_ID = os.getenv("CHANNEL_ID")
 PUSHINPAY_API_KEY = os.getenv("PUSHINPAY_API_KEY")
 
 app = Flask(__name__)
